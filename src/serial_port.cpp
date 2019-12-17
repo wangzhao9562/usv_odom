@@ -11,6 +11,10 @@
   * 2019/12/2   
   * Complete interface of SerialPort class, complie successfully
   ******************************************************************************
+  * History:
+  * 2019/12/17   
+  * Overload SerialPort::writeInToPort
+  ******************************************************************************
 */
 
 #include <usv_odom/serial_port.h>
