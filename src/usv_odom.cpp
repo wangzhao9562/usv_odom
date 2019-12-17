@@ -15,7 +15,7 @@
 
 #include <usv_odom/usv_odom.h>
 
-UsvOdom::UsvOdom(){
+UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0){
   int baud_rate, time_out;
   std::string port_num;
 
@@ -85,6 +85,14 @@ bool UsvOdom::sendCommand(std::string command){
   return false;
 }
 
+bool UsvOdom::sendCommand(uint8_t* command, size_t command_len){
+  if(serial_port_->isPortOpen()){
+    serial_port_->writeInToPort(command, command_len);
+    return true;
+  }
+  return false;
+}
+
 // std::string UsvOdom::dataProcess(std::string read_buf){
 std::vector<uint8_t> UsvOdom::dataProcess(std::vector<uint8_t> read_buf){
   size_t cut_pos = dataProcess(read_buf, read_buf.size()); // get cut position
@@ -131,6 +139,10 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
         double north = UnpackProtocol::getNorth(lat, ori_lat); // get coordination of north in NED
         double east = UnpackProtocol::getEast(lat, lng, ori_lng); // get coordination of east in NED
 
+        // update cmd 
+        rud_ = rud_ang;
+        speed_ = speed;
+
         // store position of origin point
         ori_lat_ = ori_lat;
         ori_lng_ = ori_lng;
@@ -174,19 +186,35 @@ void UsvOdom::nextGoalCb(const geometry_msgs::PoseStamped::ConstPtr& next_goal){
   // get coordinate in NED
   double north = next_goal->pose.position.x;
   double east = next_goal->pose.position.y;
+  double high = next_goal->pose.position.z;
+ 
+  if(high != -1){
+    // transfer coordinate from NED to LatLng
+    double next_lat = UnpackProtocol::getLat(north, ori_lat_);
+    double next_lng = UnpackProtocol::getLng(east, ori_lat_, ori_lng_);
 
-  // transfer coordinate from NED to LatLng
-  double next_lat = UnpackProtocol::getLat(north, ori_lat_);
-  double next_lng = UnpackProtocol::getLng(east, ori_lat_, ori_lng_);
-
-  std::string data_stack = PackProtocol::getDataStack(ship_num_, next_lat, next_lng);
-  if(sendCommand(data_stack)){
-    ROS_INFO("usv_odom: write into port!");
+    size_t data_len;
+    uint8_t* data_stack = PackProtocol::getDataStack(ship_num_, next_lat, next_lng, data_len);
+ 
+    if(sendCommand(data_stack, data_len)){
+      ROS_INFO("usv_odom: write into port!");
+    }
+    else{
+      ROS_ERROR("usv_odom: write failed!");
+    }
   }
   else{
-    ROS_ERROR("usv_odom: write failed!");
+    size_t data_len;
+    rud_ = PackProtocol::init_rud_;
+    speed_ = 0;
+    uint8_t* data_stack = PackProtocol::getDataStack(ship_num_, 0, 0, rud_, speed_, data_len);
+    if(sendCommand(data_stack, data_len)){
+      ROS_INFO("usv_odom: write into port!");
+    }
+    else{
+      ROS_ERROR("usv_odom: write failed!");
+    }
   }
-  /* Pack up lat and lng in form of data stack, then call writeToPort */
 }
 
 void UsvOdom::testPrint(std::vector<uint8_t> read_buf){
