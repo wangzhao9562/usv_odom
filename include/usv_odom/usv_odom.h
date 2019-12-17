@@ -11,6 +11,10 @@
   * 2019/12/4   
   * Complete interface of UsvOdom class, complie successfully
   ******************************************************************************
+  * History:
+  * 2019/12/17 
+  * Overload UsvOdom::sendCommand
+  ******************************************************************************
 */
 
 #ifndef USV_ODOM_H_
