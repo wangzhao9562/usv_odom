@@ -11,17 +11,24 @@
   * 2019/12/4   
   * Complete node, complie successfully
   ******************************************************************************
+  * History:
+  * 2019/12/17 
+  * Add ros parameter pub_time
+  ******************************************************************************
 */
 
 #include <usv_odom/usv_odom.h>
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "usv_odom_node");
-  ros::NodeHandle nh; 
+  ros::NodeHandle nh;
+ 
+  int pub_time;
+  nh.param("pub_time", pub_time, 100);
  
   UsvOdom usv_odom;
 
-  ros::Rate loop_rate(100);
+  ros::Rate loop_rate(pub_time);
 
   while(ros::ok()){
     usv_odom.publishOdom();
