@@ -11,6 +11,10 @@
   * 2019/12/4   
   * Complete interface of SerialPort class, complie successfully
   ******************************************************************************
+  * History:
+  * 2019/12/17   
+  * Overload SerialPort::writeInToPort
+  ******************************************************************************
 */
 
 #ifndef SERIAL_PORT_H_
