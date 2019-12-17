@@ -1,0 +1,13 @@
+<launch>
+  <node pkg="usv_odom" type="usv_odom_node" respawn="false" name="usv_odom_node" output="screen" clear_params="false">
+    <param name="port_num" value="/dev/ttyUSB0"/>
+    <param name="baud_rate" type="int" value="9600"/>
+    <param name="time_out" type="int" value="200"/>  
+    <param name="ship_num" type="int" value="1"/>
+    <param name="odom_frame" value="odom"/>
+    <param name="robot_base_frame" value="base_link"/>
+    <param name="pub_time" type="int" value="100"/>
+  </node>
+
+
+</launch>
