@@ -11,6 +11,14 @@
   * 2019/12/4   
   * Complete interface of UsvOdom class, complie successfully
   ******************************************************************************
+  * History:
+  * 2019/12/17  
+  * Overload UsvOdom::sendCommand
+  ******************************************************************************
+  * History:
+  * 2019/12/17  
+  * Modify UsvOdom::NextGoalCb, add stop open control command sending
+  ******************************************************************************
 */
 
 #include <usv_odom/usv_odom.h>
