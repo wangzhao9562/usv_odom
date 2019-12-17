@@ -92,9 +92,16 @@ public:
   virtual void updateBuffer(std::vector<uint8_t> new_buf);
   // virtual void updateBuffer(std::string new_buf);
   
-  /* @brief Wrtie data into serial port
+  /* @brief Write data into serial port
+   * @param data_str Input data in form of string
    */
   virtual void writeInToPort(std::string data_str);
+
+  /* @brief Write data into seiral port 
+   * @param data_str Input data in form of string
+   * @param data_len Length of data to write
+   */
+  virtual void writeInToPort(uint8_t* data_str, size_t data_len);
 
   /* @brief Flush serial port
    */
