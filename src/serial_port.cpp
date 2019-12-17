@@ -1,5 +1,5 @@
 /**
-  ******************************************************************************
+  i*****************************************************************************
   * Copyright(c) HUST ARMS 302 All rights reserved. 
   * - Filename:  serial_port.h
   * - Author:    Zhao Wang
@@ -106,6 +106,10 @@ bool SerialPort::readFromPort(size_t read_len){
 
 void SerialPort::writeInToPort(std::string data_str){
   ros_serial_port_->write(data_str);
+}
+
+void SerialPort::writeInToPort(uint8_t* data_str, size_t data_len){
+  ros_serial_port_->write(data_str, data_len);
 }
 
 void SerialPort::updateBuffer(std::vector<uint8_t> new_buf){
