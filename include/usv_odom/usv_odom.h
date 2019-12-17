@@ -26,8 +26,11 @@
 
 #include <geometry_msgs/Quaternion.h>
 #include <geographic_msgs/GeoPoint.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 
+#include <cmath>
+#include <string>
 #include <algorithm>
 
 class UsvOdom{
@@ -37,6 +40,12 @@ public:
    * @brief Constructor of UsvOdom
    */
   UsvOdom();
+
+  /**
+   * @brief Constructor of UsvOdom
+   * @param pub_time Publish interval of odom publisher 
+   */
+  UsvOdom(int pub_time);
 
   /**
    * @brief Deconstructor of UsvOdom
@@ -49,6 +58,11 @@ public:
   bool publishOdom(); 
 
 private:
+  /**
+   * @brief Initialization
+   */
+  void initialize();
+
   /** 
    * @brief Open serial port
    * @return True if open port successfully, otherwise return false
@@ -95,6 +109,9 @@ private:
 private:
   SerialPort* serial_port_;
 
+  std::string odom_frame_;
+  std::string robot_base_frame_;
+
   // read length
   size_t read_len_;
 
@@ -105,12 +122,19 @@ private:
   double ori_lat_;
   double ori_lng_;
 
+  // old position parameters
+  double pre_north_;
+  double pre_east_;
+  double pre_yaw_;
+
   // ros components
   ros::Publisher odom_pub_;
   ros::Publisher geographic_pos_pub_;
   ros::Publisher ned_pos_pub_;
 
   ros::Subscriber goal_sub_;
+ 
+  int pub_interval_;
 
   int rud_; // record rud cmd
   int speed_; // record speed cmd
