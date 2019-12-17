@@ -14,16 +14,22 @@
   * History:
   * 2019/12/17  
   * Overload UsvOdom::sendCommand
-  ******************************************************************************
-  * History:
-  * 2019/12/17  
   * Modify UsvOdom::NextGoalCb, add stop open control command sending
+  * Modify parameter type to publish on topic "odom"
   ******************************************************************************
 */
 
 #include <usv_odom/usv_odom.h>
 
-UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0){
+UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0), pub_interval_(100){
+  initialize();
+}
+
+UsvOdom::UsvOdom(int pub_time) : rud_(PackProtocol::init_rud_), speed_(0), pub_interval_(pub_time){
+  initialize();
+}
+
+void UsvOdom::initialize(){
   int baud_rate, time_out;
   std::string port_num;
 
@@ -34,8 +40,10 @@ UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0){
   private_nh.param("baud_rate", baud_rate, 9600);
   private_nh.param("time_out", time_out, 200);
   private_nh.param("ship_num", ship_num_, 1);
+  private_nh.param("odom_frame", odom_frame_, std::string("odom"));
+  private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
 
-  odom_pub_ = nh.advertise<geometry_msgs::PoseStamped>("odom", 1);
+  odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 1);
   geographic_pos_pub_ = nh.advertise<geographic_msgs::GeoPoint>("geo_position", 1);
   goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("next_goal", 1, boost::bind(&UsvOdom::nextGoalCb, this, _1));
   
@@ -155,13 +163,21 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
         ori_lat_ = ori_lat;
         ori_lng_ = ori_lng;
 
-        // create odom message 
-        geometry_msgs::PoseStamped odom_msgs;
-        odom_msgs.header.stamp = ros::Time::now();
-        odom_msgs.pose.position.x = north;
-        odom_msgs.pose.position.y = east;
-        geometry_msgs::Quaternion quad = tf::createQuaternionMsgFromRollPitchYaw(0, 0, yaw);
-        odom_msgs.pose.orientation = quad;
+        double det_x = north - pre_north_;
+        double det_y = east - pre_east_; 
+     
+        // create odom message
+        nav_msgs::Odometry odom;
+        odom.header.stamp = ros::Time::now();
+        odom.header.frame_id = odom_frame_;
+        odom.pose.pose.position.x = north;
+        odom.pose.pose.position.y = east;
+        odom.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, yaw);
+
+        odom.child_frame_id = robot_base_frame_;
+        odom.twist.twist.linear.x = (det_x + det_y) * std::sin(yaw) * std::cos(yaw) * 1000 / pub_interval_;
+        odom.twist.twist.linear.y = (det_y - det_x) * std::sin(yaw) * std::cos(yaw) * 1000 / (std::cos(yaw) * std::cos(yaw) - std::sin(yaw) * std::sin(yaw));
+        odom.twist.twist.angular.z = (yaw - pre_yaw_) / pub_interval_;
 
         // create geographic position message
         geographic_msgs::GeoPoint geo_pos_msgs;
@@ -170,7 +186,7 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
 
         // publish message
         ROS_INFO("usv_odom: publish odom");
-        odom_pub_.publish(odom_msgs);
+        odom_pub_.publish(odom);
         geographic_pos_pub_.publish(geo_pos_msgs);
 
         return cut_pos;
