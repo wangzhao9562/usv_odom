@@ -33,9 +33,9 @@ struct GpsParam{
  */
 struct UnpackProtocol{
   // data bit information
-  static const uint8_t pack_head_ = 0xA1; 
+  static const uint8_t pack_head_ = 0xA5; 
   static const uint8_t pack_tail_ = 0xAA; 
-  static const uint8_t pack_sec_bit_ = 0x1A;
+  static const uint8_t pack_sec_bit_ = 0x5A;
 
   static const size_t pack_len_ = 30;
 
