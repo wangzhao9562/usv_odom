@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   geographic_msgs
   geometry_msgs
+  nav_msgs
   roscpp
   rospy
   serial
