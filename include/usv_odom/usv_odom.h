@@ -74,6 +74,14 @@ private:
    */
   bool sendCommand(std::string command);
 
+  /*
+   * @brief Send command to base controller
+   * @param command Command to be sent
+   * @param command_len Length of command
+   * @param If command is written into port successfully, return true. Otherwise return false
+   */
+  bool sendCommand(uint8_t* command, size_t command_len);
+  
   /**
    * @biref Test interface, print received string to console
    */
@@ -99,6 +107,9 @@ private:
   ros::Publisher ned_pos_pub_;
 
   ros::Subscriber goal_sub_;
+
+  int rud_; // record rud cmd
+  int speed_; // record speed cmd
 };
 
 #endif
