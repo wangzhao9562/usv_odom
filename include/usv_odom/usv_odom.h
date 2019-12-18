@@ -104,8 +104,14 @@ private:
    * @biref Test interface, print received string to console
    */
   void testPrint(std::vector<uint8_t> read_buf); 
-  // void testPrint(std::string str);
  
+  /**
+   * @biref Test interface, print received string to console
+   * @param data_buf Data to print on control console
+   * @param data_len Length of data stack
+   */
+  void testPrint(uint8_t* data_buf, size_t data_len); 
+
 private:
   SerialPort* serial_port_;
 
