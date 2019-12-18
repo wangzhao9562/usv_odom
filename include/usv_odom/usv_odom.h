@@ -15,10 +15,17 @@
   * 2019/12/17 
   * Overload UsvOdom::sendCommand
   ******************************************************************************
+  * History:
+  * 2019/12/18 
+  * Add mutex for serial port writing
+  * Add ros service to set origin point of USV
+  ******************************************************************************
 */
 
 #ifndef USV_ODOM_H_
 #define USV_ODOM_H_
+
+#include <boost/thread.hpp>
 
 #include <usv_odom/serial_port.h>
 #include <usv_odom/unpack_protocol.h>
@@ -28,6 +35,8 @@
 #include <geographic_msgs/GeoPoint.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
+
+#include <usv_odom/SetOrigin.h>
 
 #include <cmath>
 #include <string>
@@ -112,6 +121,14 @@ private:
    */
   void testPrint(uint8_t* data_buf, size_t data_len); 
 
+  /**
+   * @brief Set origin point of USV
+   * @param req Request from client which invoke the service
+   * @param res Response to client which invoke the service
+   * @return If command is written into port successfully, return true. Ohterwise return false.
+   */
+  bool setOrigin(usv_odom::SetOrigin::Request& req, usv_odom::SetOrigin::Response& res);
+
 private:
   SerialPort* serial_port_;
 
@@ -139,11 +156,15 @@ private:
   ros::Publisher ned_pos_pub_;
 
   ros::Subscriber goal_sub_;
+
+  ros::ServiceServer set_origin_srv_;
  
   int pub_interval_;
 
   int rud_; // record rud cmd
   int speed_; // record speed cmd
+
+  boost::mutex 	write_mutex_; // mutex for parameters write and read
 };
 
 #endif
