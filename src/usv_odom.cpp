@@ -20,6 +20,7 @@
   * History:
   * 2019/12/18 
   * Modify callback function of topic "next_goal"
+  * Add ros service to set origin point of USV
   ******************************************************************************
 */
 
@@ -53,7 +54,9 @@ void UsvOdom::initialize(){
   // odom_pub_ = nh.advertise<nav_msgs::Odometry>(odom_frame_, 1); // temp to be anotated
   geographic_pos_pub_ = nh.advertise<geographic_msgs::GeoPoint>("geo_position", 1);
   goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("next_goal", 1, boost::bind(&UsvOdom::nextGoalCb, this, _1));
-  
+  // set_origin_srv_ = nh.advertiseService("set_origin", boost::bind(&UsvOdom::setOrigin, this, _1, _2));
+  set_origin_srv_ = nh.advertiseService("set_origin", &UsvOdom::setOrigin, this);
+
   serial_port_ = new SerialPort(port_num, baud_rate); 
 
   read_len_ = 1024;
@@ -102,7 +105,10 @@ bool UsvOdom::publishOdom(){
 
 bool UsvOdom::sendCommand(std::string command){
   if(serial_port_->isPortOpen()){
-    serial_port_->writeInToPort(command);
+    {
+      boost::lock_guard<boost::mutex> lock(write_mutex_);
+      serial_port_->writeInToPort(command);
+    }
     return true;
   }
   return false;
@@ -110,7 +116,10 @@ bool UsvOdom::sendCommand(std::string command){
 
 bool UsvOdom::sendCommand(uint8_t* command, size_t command_len){
   if(serial_port_->isPortOpen()){
-    serial_port_->writeInToPort(command, command_len);
+    {
+      boost::lock_guard<boost::mutex> lock(write_mutex_);
+      serial_port_->writeInToPort(command, command_len);
+    }
     return true;
   }
   return false;
@@ -293,3 +302,22 @@ void UsvOdom::testPrint(std::string str){
   ROS_INFO_STREAM("usv_odom: test print " << str_S.data);
 }
 */
+
+bool UsvOdom::setOrigin(usv_odom::SetOrigin::Request& req, usv_odom::SetOrigin::Response& res){
+  std::vector<uint8_t> data_queue = PackProtocol::getDataStack(ship_num_);
+  uint8_t data_stack[data_queue.size()];
+  for(int i = 0; i < data_queue.size(); ++i){
+    data_stack[i] = data_queue[i];
+  }
+ 
+  if(sendCommand(data_stack, data_queue.size())){
+    res.result = true; 
+    ROS_INFO("usv_odom: write set origin point command!");
+    testPrint(data_queue);
+  }
+  else{
+    res.result = false;
+    ROS_ERROR("usv_odom: write set origin command failed!");
+  }
+  return res.result;
+}
