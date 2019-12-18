@@ -11,12 +11,17 @@
   * 2019/12/4  
   * Complete interface of PackProtocol struct
   ******************************************************************************
+  * History:
+  * 2019/12/18 
+  * Modify data stack package interface
+  ******************************************************************************
 */
 
 #ifndef PACK_PROTOCOL_H_
 #define PACK_PROTOCOL_H_
 
 #include <string>
+#include <vector>
 #include <utility>
 
 enum class MissionType{
@@ -62,14 +67,13 @@ struct PackProtocol{
   static const uint8_t ship_num_ = 0x00;
 
   // packing protocol
-  static uint8_t* getDataStack(int ship_num, int rud_det, int speed_det, int& rud, int& speed, size_t& data_len);
-
-  static uint8_t* getDataStack(int ship_num, double kp, double ki, double kd, double kp1, double ki1, double kd1, size_t& data_len); 
-  static uint8_t* getDataStack(int ship_num, double vel, FixedVelNav, size_t& data_len);
-  static uint8_t* getDataStack(int ship_num, double yaw, FixedYawNav, size_t& data_len);
-  static uint8_t* getDataStack(int ship_num, double lat, double lng, size_t& data_len);
-  static uint8_t* getDataStack(int ship_num, double lat1, double lng1, double lat2, double lng2, size_t& data_len); // Invalid
-  static uint8_t* getDataStack(int ship_num, size_t& data_len);
+  static std::vector<uint8_t> getDataStack(int ship_num, int rud_det, int speed_det, int& rud, int& speed);
+  static std::vector<uint8_t> getDataStack(int ship_num, double kp, double ki, double kd, double kp1, double ki1, double kd1); 
+  static std::vector<uint8_t> getDataStack(int ship_num, double vel, FixedVelNav);
+  static std::vector<uint8_t> getDataStack(int ship_num, double yaw, FixedYawNav);
+  static std::vector<uint8_t> getDataStack(int ship_num, double lat, double lng);
+  static std::vector<uint8_t> getDataStack(int ship_num, double lat1, double lng1, double lat2, double lng2); // Invalid
+  static std::vector<uint8_t> getDataStack(int ship_num);
 };
 
 #endif
