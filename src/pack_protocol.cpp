@@ -15,12 +15,16 @@
   * 2019/12/17  
   * Add open control data stack interface 
   ******************************************************************************
+  * History:
+  * 2019/12/18 
+  * Modify data stack package interface
+  ******************************************************************************
 */
 
 #include <usv_odom/pack_protocol.h>
 
 // Open control
-uint8_t* PackProtocol::getDataStack(int ship_num, int rud_det, int speed_det, int& rud, int& speed, size_t& data_len){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, int rud_det, int speed_det, int& rud, int& speed){
   uint8_t data_stack[PackProtocol::pack_len_open_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, pack_len_open_, PackProtocol::ship_num_, PackProtocol::fbit_open_, 0x00, 0x00, PackProtocol::pack_tail_};
  
   data_stack[3] = static_cast<uint8_t>(ship_num); 
@@ -39,11 +43,14 @@ uint8_t* PackProtocol::getDataStack(int ship_num, int rud_det, int speed_det, in
     data_stack[6] = static_cast<uint8_t>(speed);
   }
 
-  return data_stack;
+  std::vector<uint8_t> data_queue;
+  data_queue.insert(data_queue.end(), data_stack, data_stack + PackProtocol::pack_len_open_);
+  
+  return data_queue;
 }
 
 // PID setting 
-uint8_t* PackProtocol::getDataStack(int ship_num, double kp, double ki, double kd, double kp1, double ki1, double kd1, size_t& data_len){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double kp, double ki, double kd, double kp1, double ki1, double kd1){
   uint8_t data_stack[PackProtocol::pack_len_pid_int_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, pack_len_pid_, PackProtocol::ship_num_, PackProtocol::fbit_pid_, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, PackProtocol::pack_tail_}; // default data stack
 
   data_stack[3] = static_cast<uint8_t>(ship_num);
@@ -54,33 +61,38 @@ uint8_t* PackProtocol::getDataStack(int ship_num, double kp, double ki, double k
   data_stack[9] = static_cast<uint8_t>(ki1 * 100);
   data_stack[10] = static_cast<uint8_t>(kd1 * 10);
 
-  return data_stack;
+  std::vector<uint8_t> data_queue;
+  data_queue.insert(data_queue.end(), data_stack, data_stack + PackProtocol::pack_len_pid_int_);
+  
+  return data_queue;
 }
 
 // Fixed velocity navigating
-uint8_t* PackProtocol::getDataStack(int ship_num, double vel, FixedVelNav, size_t& data_len){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double vel, FixedVelNav){
   uint8_t data_stack[PackProtocol::pack_len_fixed_nav_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, pack_len_fixed_nav_, PackProtocol::ship_num_, PackProtocol::fbit_fixed_vel_, 0x00, PackProtocol::pack_tail_};
   data_stack[3] = static_cast<uint8_t>(ship_num);
   data_stack[5] = static_cast<uint8_t>(vel * 10);
 
-  data_len = PackProtocol::pack_len_fixed_nav_;
-
-  return data_stack;
+  std::vector<uint8_t> data_queue;
+  data_queue.insert(data_queue.end(), data_stack, data_stack + PackProtocol::pack_len_fixed_nav_);
+ 
+  return data_queue;
 }
 
 // Fixed orientation navigating
-uint8_t* PackProtocol::getDataStack(int ship_num, double yaw, FixedYawNav, size_t& data_len){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double yaw, FixedYawNav){
   uint8_t data_stack[PackProtocol::pack_len_fixed_nav_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, pack_len_fixed_nav_, PackProtocol::ship_num_, PackProtocol::fbit_fixed_vel_, 0x00, PackProtocol::pack_tail_};
   data_stack[3] = static_cast<uint8_t>(ship_num);
   data_stack[5] = static_cast<uint8_t>(yaw);
 
-  data_len = PackProtocol::pack_len_fixed_nav_;
-
-  return data_stack;
+  std::vector<uint8_t> data_queue;
+  data_queue.insert(data_queue.end(), data_stack, data_stack + PackProtocol::pack_len_fixed_nav_);
+  
+  return data_queue;
 }
 
 // Point follow
-uint8_t* PackProtocol::getDataStack(int ship_num, double lat, double lng, size_t& data_len){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double lat, double lng){
   uint8_t data_stack[PackProtocol::pack_len_point_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, PackProtocol::pack_len_point_, PackProtocol::ship_num_, PackProtocol::fbit_point_, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, PackProtocol::pack_tail_};
   
   data_stack[3] = static_cast<uint8_t>(ship_num);
@@ -98,24 +110,26 @@ uint8_t* PackProtocol::getDataStack(int ship_num, double lat, double lng, size_t
   data_stack[11] = static_cast<uint8_t>(lng_int >> 8);
   data_stack[12] = static_cast<uint8_t>(lng_int);
 
-  data_len = PackProtocol::pack_len_point_;
- 
-  return data_stack; 
+  std::vector<uint8_t> data_queue;
+  data_queue.insert(data_queue.end(), data_stack, data_stack + PackProtocol::pack_len_point_);
+  
+  return data_queue; 
 }
 
 // Common line follow
-uint8_t* PackProtocol::getDataStack(int ship_num, double lat1, double lng1, double lat2, double lng2, size_t& data_len){
-  /* Invalid */
-  return nullptr;
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double lat1, double lng1, double lat2, double lng2){
+  /* Invalid */ 
+  return std::vector<uint8_t>();
 }
 
 // Origin point setting
-uint8_t* PackProtocol::getDataStack(int ship_num, size_t& data_len){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num){
   uint8_t data_stack[PackProtocol::pack_len_ori_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, PackProtocol::pack_len_ori_, PackProtocol::ship_num_, PackProtocol::fbit_ori_, PackProtocol::pack_tail_};
 
   data_stack[3] = static_cast<uint8_t>(ship_num);
 
-  data_len = PackProtocol::pack_len_ori_;
-
-  return data_stack;
+  std::vector<uint8_t> data_queue;
+  data_queue.insert(data_queue.end(), data_stack, data_stack + PackProtocol::pack_len_ori_);
+  
+  return data_queue;
 }
