@@ -160,7 +160,7 @@ struct UnpackProtocol{
    * @return Result of calculation
    */
   static double getLat(double north,  double ori_lat){
-    return (ori_lat + north * std::sqrt(std::pow(1 - std::pow(GpsParam::earth_e_, 2) * std::pow(std::sin(ori_lat * PI / 180), 2), 3)) * 180 / (GpsParam::earth_a_ * (1 - std::pow(GpsParam::earth_e_ , 2)) * PI));
+    return (ori_lat + north * std::sqrt(std::pow(1 - std::pow(GpsParam::earth_e_ * std::sin(ori_lat * PI / 180), 2), 3)) * 180 / (GpsParam::earth_a_ * (1 - std::pow(GpsParam::earth_e_ , 2)) * PI));
   }
   
   /**
@@ -171,7 +171,7 @@ struct UnpackProtocol{
    * @return Result of calculation
    */
   static double getLng(double east, double ori_lat, double ori_lng){
-    return (ori_lng + east * std::sqrt(1 - std::pow(GpsParam::earth_e_, 2) * std::pow(std::sin(ori_lat * PI / 180), 2)) * 180 / (GpsParam::earth_a_ * std::cos(ori_lat * PI / 180) * PI));
+    return (ori_lng + east * std::sqrt(1 - std::pow(GpsParam::earth_e_ * std::sin(ori_lat * PI / 180), 2)) * 180 / (GpsParam::earth_a_ * std::cos(ori_lat * PI / 180) * PI));
   }
 };
 
