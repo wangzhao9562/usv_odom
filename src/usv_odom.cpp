@@ -17,9 +17,14 @@
   * Modify UsvOdom::NextGoalCb, add stop open control command sending
   * Modify parameter type to publish on topic "odom"
   ******************************************************************************
+  * History:
+  * 2019/12/18 
+  * Modify callback function of topic "next_goal"
+  ******************************************************************************
 */
 
 #include <usv_odom/usv_odom.h>
+#include <exception>
 
 UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0), pub_interval_(100){
   initialize();
@@ -42,8 +47,10 @@ void UsvOdom::initialize(){
   private_nh.param("ship_num", ship_num_, 1);
   private_nh.param("odom_frame", odom_frame_, std::string("odom"));
   private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
+  private_nh.param("origin_latitude", ori_lat_, 30.0);
+  private_nh.param("origin_longitude", ori_lng_, 114.0);
 
-  odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 1);
+  // odom_pub_ = nh.advertise<nav_msgs::Odometry>(odom_frame_, 1); // temp to be anotated
   geographic_pos_pub_ = nh.advertise<geographic_msgs::GeoPoint>("geo_position", 1);
   goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("next_goal", 1, boost::bind(&UsvOdom::nextGoalCb, this, _1));
   
@@ -186,7 +193,7 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
 
         // publish message
         ROS_INFO("usv_odom: publish odom");
-        odom_pub_.publish(odom);
+        // odom_pub_.publish(odom); //temp to be anotated
         geographic_pos_pub_.publish(geo_pos_msgs);
 
         return cut_pos;
@@ -217,33 +224,63 @@ void UsvOdom::nextGoalCb(const geometry_msgs::PoseStamped::ConstPtr& next_goal){
     double next_lat = UnpackProtocol::getLat(north, ori_lat_);
     double next_lng = UnpackProtocol::getLng(east, ori_lat_, ori_lng_);
 
-    size_t data_len;
-    uint8_t* data_stack = PackProtocol::getDataStack(ship_num_, next_lat, next_lng, data_len);
- 
-    if(sendCommand(data_stack, data_len)){
-      ROS_INFO("usv_odom: write into port!");
+    ROS_INFO_STREAM("usv_odom: latitude and longitude of next goal: " << std::setprecision(6) << north << "," << east << "," << ori_lat_ << "," << ori_lng_ << "," << next_lat << "," << next_lng);
+
+    std::vector<uint8_t> data_queue = PackProtocol::getDataStack(ship_num_, next_lat, next_lng);
+    uint8_t data_stack[data_queue.size()];
+
+    for(int i = 0; i < data_queue.size(); ++i){
+      data_stack[i] = data_queue[i];
+    }
+
+    if(sendCommand(data_stack, data_queue.size())){
+      ROS_INFO("usv_odom: write point follow command!");
+      testPrint(data_queue);
     }
     else{
-      ROS_ERROR("usv_odom: write failed!");
+      ROS_ERROR("usv_odom: write point follow command failed!");
+      testPrint(data_queue);
     }
   }
   else{
     size_t data_len;
     rud_ = PackProtocol::init_rud_;
     speed_ = 0;
-    uint8_t* data_stack = PackProtocol::getDataStack(ship_num_, 0, 0, rud_, speed_, data_len);
-    if(sendCommand(data_stack, data_len)){
-      ROS_INFO("usv_odom: write into port!");
+    std::vector<uint8_t> data_queue = PackProtocol::getDataStack(ship_num_, 0, 0, rud_, speed_);
+    uint8_t data_stack[data_queue.size()];
+    for(int i = 0; i < data_queue.size(); ++i){
+      data_stack[i] = data_queue[i];
+    }
+    if(sendCommand(data_stack, data_queue.size())){
+      ROS_INFO("usv_odom: write stop command!");
+      testPrint(data_queue);
     }
     else{
-      ROS_ERROR("usv_odom: write failed!");
+      ROS_ERROR("usv_odom: write stop command failed!");
+      testPrint(data_queue);
     }
+  }
+}
+
+void UsvOdom::testPrint(uint8_t* data_buf, size_t len){
+  std::vector<uint8_t> data_queue;
+  try{
+    data_queue.insert(data_queue.end(), data_buf, data_buf+len);
+  }
+  catch(std::exception& e){
+    ROS_ERROR("usv_odom: transfer buffer to queue failed");
+  }
+  try{
+    testPrint(data_queue);
+  }
+  catch(std::exception& e){
+    ROS_ERROR("usv_odom: print data queue failed");
   }
 }
 
 void UsvOdom::testPrint(std::vector<uint8_t> read_buf){
   std::for_each(read_buf.begin(), read_buf.end(), [](uint8_t data){
-     std::cout << data << std::hex << (data & 0xff) << " "; 
+     std::cout << std::hex << (data & 0xff) << " "; 
     }
   );
   std::cout << std::endl;
