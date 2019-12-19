@@ -26,6 +26,7 @@
 #define USV_ODOM_H_
 
 #include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <usv_odom/serial_port.h>
 #include <usv_odom/unpack_protocol.h>
@@ -37,6 +38,7 @@
 #include <tf/transform_datatypes.h>
 
 #include <usv_odom/SetOrigin.h>
+#include <usv_odom/slide_avr_filter.h>
 
 #include <cmath>
 #include <string>
@@ -165,6 +167,13 @@ private:
   int speed_; // record speed cmd
 
   boost::mutex 	write_mutex_; // mutex for parameters write and read
+
+  size_t count_;
+
+  OdomFilter* odom_filter_;
+  int filter_st_;
+
+  boost::posix_time::ptime last_pub_time_;
 };
 
 #endif
