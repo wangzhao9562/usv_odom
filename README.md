@@ -1,4 +1,4 @@
-Ros pacakge which implements communication between main controller and base controller of ARMs USV
+Ros pacakge which implements communication between main controller and base controller of HUST_ARMs USV
 
 ARMs USV communication protocol
 Base controller to main controller:  
