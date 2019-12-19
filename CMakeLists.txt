@@ -58,6 +58,7 @@ add_library(usv_odom
   src/pack_protocol.cpp
   src/serial_port_boost.cpp
   src/set_origin_node.cpp
+  src/slide_avr_filter.cpp
 )
 target_link_libraries(usv_odom ${catkin_LIBRARIES})
 add_dependencies(usv_odom ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
