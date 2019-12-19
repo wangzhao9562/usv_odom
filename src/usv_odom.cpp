@@ -1,43 +1,53 @@
 /**
-  ******************************************************************************
+  *****************************************************************************
   * Copyright(c) HUST ARMS 302 All rights reserved. 
   * - Filename:  usv_odom.cpp
   * - Author:    Zhao Wang
   * - Version:   V1.0.0
   * - Date:      2019/12/4
   * - Brief:     Interface implementation of UsvOdom Class
-  ******************************************************************************
+  *****************************************************************************
   * History:
   * 2019/12/4   
   * Complete interface of UsvOdom class, complie successfully
-  ******************************************************************************
+  *****************************************************************************
   * History:
   * 2019/12/17  
   * Overload UsvOdom::sendCommand
   * Modify UsvOdom::NextGoalCb, add stop open control command sending
   * Modify parameter type to publish on topic "odom"
-  ******************************************************************************
+  *****************************************************************************
   * History:
   * 2019/12/18 
   * Modify callback function of topic "next_goal"
   * Add ros service to set origin point of USV
-  ******************************************************************************
+  *****************************************************************************
+  * History:
+  * 2019/12/19
+  * Add data filterint for odom message
+  *****************************************************************************
 */
 
 #include <usv_odom/usv_odom.h>
 #include <exception>
 
-UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0), pub_interval_(100){
+UsvOdom::UsvOdom() : rud_(PackProtocol::init_rud_), speed_(0), 
+                     pub_interval_(100), count_(0), odom_filter_(nullptr)
+{
   initialize();
 }
 
-UsvOdom::UsvOdom(int pub_time) : rud_(PackProtocol::init_rud_), speed_(0), pub_interval_(pub_time){
+UsvOdom::UsvOdom(int pub_time) : rud_(PackProtocol::init_rud_), speed_(0), 
+                                 pub_interval_(pub_time), count_(0), 
+                                 odom_filter_(nullptr)
+{
   initialize();
 }
 
 void UsvOdom::initialize(){
   int baud_rate, time_out;
   std::string port_num;
+  bool use_slide_avr_filter;
 
   ros::NodeHandle private_nh("~");
   ros::NodeHandle nh;
@@ -50,6 +60,8 @@ void UsvOdom::initialize(){
   private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
   private_nh.param("origin_latitude", ori_lat_, 30.0);
   private_nh.param("origin_longitude", ori_lng_, 114.0);
+  private_nh.param("use_slide_avr_filter", use_slide_avr_filter, true);
+  private_nh.param("filter_start_time", filter_st_, 5);  
 
   // odom_pub_ = nh.advertise<nav_msgs::Odometry>(odom_frame_, 1); // temp to be anotated
   geographic_pos_pub_ = nh.advertise<geographic_msgs::GeoPoint>("geo_position", 1);
@@ -60,6 +72,12 @@ void UsvOdom::initialize(){
   serial_port_ = new SerialPort(port_num, baud_rate); 
 
   read_len_ = 1024;
+
+  if(use_slide_avr_filter){
+    odom_filter_ = new SlideAvrFilter(static_cast<size_t>(filter_st_));
+  }
+
+  last_pub_time_ = boost::posix_time::microsec_clock::universal_time();
 
   if(!serial_port_->isPortOpen()){
     if(!UsvOdom::openSerialPort()){
@@ -73,8 +91,14 @@ UsvOdom::~UsvOdom(){
     if(serial_port_->isPortOpen()){
      serial_port_->closePort();
     }
+    delete serial_port_;
+    serial_port_ = nullptr;
   }
-  delete serial_port_;
+
+  if(odom_filter_){
+    delete odom_filter_;
+    odom_filter_ = nullptr; 
+  }
 }
 
 bool UsvOdom::openSerialPort(){
@@ -171,6 +195,9 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
         double north = UnpackProtocol::getNorth(lat, ori_lat); // get coordination of north in NED
         double east = UnpackProtocol::getEast(lat, lng, ori_lng); // get coordination of east in NED
 
+        // update count
+        ++count_;
+
         // update cmd 
         rud_ = rud_ang;
         speed_ = speed;
@@ -200,10 +227,21 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
         geo_pos_msgs.latitude = lat;
         geo_pos_msgs.longitude = lng;
 
+        nav_msgs::Odometry filtered_odom = odom;
+        
+        if(odom_filter_){
+          boost::posix_time::ptime cur_time = boost::posix_time::microsec_clock::universal_time();
+          double dt = static_cast<double>((cur_time - last_pub_time_).ticks()) / 1000000;
+          filtered_odom = odom_filter_->odomFilter(odom, count_, dt);
+        }
+
         // publish message
         ROS_INFO("usv_odom: publish odom");
         // odom_pub_.publish(odom); //temp to be anotated
+        odom_pub_.publish(filtered_odom);
         geographic_pos_pub_.publish(geo_pos_msgs);
+
+        last_pub_time_ = boost::posix_time::microsec_clock::universal_time(); // upate publish time
 
         return cut_pos;
       }
