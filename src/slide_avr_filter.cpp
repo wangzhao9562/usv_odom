@@ -33,10 +33,37 @@ nav_msgs::Odometry SlideAvrFilter::odomFilter(nav_msgs::Odometry obs_pose, size_
 
 nav_msgs::Odometry SlideAvrFilter::slideAvrFiltering(nav_msgs::Odometry obs_odom, size_t time_c){
   if(time_c <= this->wt_){
+    /*
+    try{
+      slide_window_->at(time_c - 1) = obs_odom;
+    }
+    catch(std::exception& e){
+      std::cout << "dump before filter work" << e.what() << std::endl;
+    }
+    */
     slide_window_->at(time_c - 1) = obs_odom;
   }
+  else if(time_c%this->wt_ == 0){
+    /*
+    try{
+      slide_window_->at(slide_window_->size() - 1) = obs_odom; // update slide window
+    }
+    catch(std::exception& e){
+      std::cout << "dump after filter work type1" << e.what() << std::endl;
+    }
+    */
+    slide_window_->at(slide_window_->size() - 1) = obs_odom; // update slide window
+  }
   else{
-    slide_window_->at(time_c - this->wt_ - 1) = obs_odom; // update slide window
+    /*
+    try{
+      slide_window_->at(time_c%this->wt_ - 1) = obs_odom;
+    }
+    catch(std::exception& e){
+      std::cout << "dump after filter work type2" << e.what() << std::endl;
+    }
+    */
+    slide_window_->at(time_c%this->wt_ - 1) = obs_odom;
   }
 
   if(time_c >= this->wt_){
