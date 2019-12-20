@@ -63,7 +63,7 @@ void UsvOdom::initialize(){
   private_nh.param("use_slide_avr_filter", use_slide_avr_filter, true);
   private_nh.param("filter_start_time", filter_st_, 5);  
 
-  // odom_pub_ = nh.advertise<nav_msgs::Odometry>(odom_frame_, 1); // temp to be anotated
+  odom_pub_ = nh.advertise<nav_msgs::Odometry>(odom_frame_, 1); // temp to be anotated
   geographic_pos_pub_ = nh.advertise<geographic_msgs::GeoPoint>("geo_position", 1);
   goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("next_goal", 1, boost::bind(&UsvOdom::nextGoalCb, this, _1));
   // set_origin_srv_ = nh.advertiseService("set_origin", boost::bind(&UsvOdom::setOrigin, this, _1, _2));
@@ -228,11 +228,19 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
         geo_pos_msgs.longitude = lng;
 
         nav_msgs::Odometry filtered_odom = odom;
-        
+       
         if(odom_filter_){
           boost::posix_time::ptime cur_time = boost::posix_time::microsec_clock::universal_time();
           double dt = static_cast<double>((cur_time - last_pub_time_).ticks()) / 1000000;
-          filtered_odom = odom_filter_->odomFilter(odom, count_, dt);
+          try{
+            filtered_odom = odom_filter_->odomFilter(odom, count_, dt);
+            filtered_odom.header.frame_id = odom_frame_;
+            filtered_odom.header.stamp = ros::Time::now();   
+            ROS_INFO("usv_odom: odom filtering successfully!");
+          }
+          catch(std::exception& e){
+            ROS_ERROR_STREAM("usv_odom: odom filtering failed! " << count_);
+          }
         }
 
         // publish message
