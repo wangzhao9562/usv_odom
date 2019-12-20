@@ -71,8 +71,8 @@ struct PackProtocol{
   static std::vector<uint8_t> getDataStack(int ship_num, double kp, double ki, double kd, double kp1, double ki1, double kd1); 
   static std::vector<uint8_t> getDataStack(int ship_num, double vel, FixedVelNav);
   static std::vector<uint8_t> getDataStack(int ship_num, double yaw, FixedYawNav);
-  static std::vector<uint8_t> getDataStack(int ship_num, double lat, double lng);
-  static std::vector<uint8_t> getDataStack(int ship_num, double lat1, double lng1, double lat2, double lng2); // Invalid
+  static std::vector<uint8_t> getDataStack(int ship_num, long double lat, long double lng);
+  static std::vector<uint8_t> getDataStack(int ship_num, long double lat1, long double lng1, long double lat2, long double lng2); // Invalid
   static std::vector<uint8_t> getDataStack(int ship_num);
 };
 
