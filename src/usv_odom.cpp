@@ -48,6 +48,8 @@ void UsvOdom::initialize(){
   int baud_rate, time_out;
   std::string port_num;
   bool use_slide_avr_filter;
+ 
+  double temp_ori_lat, temp_ori_lng;
 
   ros::NodeHandle private_nh("~");
   ros::NodeHandle nh;
@@ -58,10 +60,13 @@ void UsvOdom::initialize(){
   private_nh.param("ship_num", ship_num_, 1);
   private_nh.param("odom_frame", odom_frame_, std::string("odom"));
   private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
-  private_nh.param("origin_latitude", ori_lat_, 30.0);
-  private_nh.param("origin_longitude", ori_lng_, 114.0);
+  private_nh.param("origin_latitude", temp_ori_lat, 30.0);
+  private_nh.param("origin_longitude", temp_ori_lng, 114.0);
   private_nh.param("use_slide_avr_filter", use_slide_avr_filter, true);
   private_nh.param("filter_start_time", filter_st_, 5);  
+
+  ori_lat_ = static_cast<long double>(temp_ori_lat);
+  ori_lng_ = static_cast<long double>(temp_ori_lng);
 
   odom_pub_ = nh.advertise<nav_msgs::Odometry>(odom_frame_, 1); // temp to be anotated
   geographic_pos_pub_ = nh.advertise<geographic_msgs::GeoPoint>("geo_position", 1);
@@ -188,12 +193,12 @@ int UsvOdom::dataProcess(std::vector<uint8_t> read_buf, int buf_len){
         double speed = UnpackProtocol::getSpeed(*(head_iter + UnpackProtocol::speed_bit_1_), *(head_iter + UnpackProtocol::speed_bit_2_)); // get speed
         double time_in_sec = *(head_iter + UnpackProtocol::time_bit_); // get time stamp
         double pid_output = UnpackProtocol::getPidOutput(*(head_iter + UnpackProtocol::pid_bit_)); // get output of pid
-        double ori_lat = UnpackProtocol::getLat(*(head_iter + UnpackProtocol::ori_lat_bit_1_), *(head_iter + UnpackProtocol::ori_lat_bit_2_), *(head_iter + UnpackProtocol::ori_lat_bit_3_), *(head_iter + UnpackProtocol::ori_lat_bit_4_)); // get latitude of origin point
-        double ori_lng = UnpackProtocol::getLng(*(head_iter + UnpackProtocol::ori_lng_bit_1_), *(head_iter + UnpackProtocol::ori_lng_bit_2_), *(head_iter + UnpackProtocol::ori_lng_bit_3_), *(head_iter + UnpackProtocol::ori_lng_bit_4_)); // get longitude of origin point
-        double lat = UnpackProtocol::getLat(*(head_iter + UnpackProtocol::lat_bit_1_), *(head_iter + UnpackProtocol::lat_bit_2_), *(head_iter + UnpackProtocol::lat_bit_3_), *(head_iter + UnpackProtocol::lat_bit_4_)); // get latitude of origin point
-        double lng = UnpackProtocol::getLng(*(head_iter + UnpackProtocol::lng_bit_1_), *(head_iter + UnpackProtocol::lng_bit_2_), *(head_iter + UnpackProtocol::lng_bit_3_), *(head_iter + UnpackProtocol::lng_bit_4_));
-        double north = UnpackProtocol::getNorth(lat, ori_lat); // get coordination of north in NED
-        double east = UnpackProtocol::getEast(lat, lng, ori_lng); // get coordination of east in NED
+        long double ori_lat = UnpackProtocol::getLat(*(head_iter + UnpackProtocol::ori_lat_bit_1_), *(head_iter + UnpackProtocol::ori_lat_bit_2_), *(head_iter + UnpackProtocol::ori_lat_bit_3_), *(head_iter + UnpackProtocol::ori_lat_bit_4_)); // get latitude of origin point
+        long double ori_lng = UnpackProtocol::getLng(*(head_iter + UnpackProtocol::ori_lng_bit_1_), *(head_iter + UnpackProtocol::ori_lng_bit_2_), *(head_iter + UnpackProtocol::ori_lng_bit_3_), *(head_iter + UnpackProtocol::ori_lng_bit_4_)); // get longitude of origin point
+        long double lat = UnpackProtocol::getLat(*(head_iter + UnpackProtocol::lat_bit_1_), *(head_iter + UnpackProtocol::lat_bit_2_), *(head_iter + UnpackProtocol::lat_bit_3_), *(head_iter + UnpackProtocol::lat_bit_4_)); // get latitude of origin point
+        long double lng = UnpackProtocol::getLng(*(head_iter + UnpackProtocol::lng_bit_1_), *(head_iter + UnpackProtocol::lng_bit_2_), *(head_iter + UnpackProtocol::lng_bit_3_), *(head_iter + UnpackProtocol::lng_bit_4_));
+        double north = UnpackProtocol::transferToNorth(lat, ori_lat); // get coordination of north in NED
+        double east = UnpackProtocol::transferToEast(lat, lng, ori_lng); // get coordination of east in NED
 
         // update count
         ++count_;
@@ -276,10 +281,10 @@ void UsvOdom::nextGoalCb(const geometry_msgs::PoseStamped::ConstPtr& next_goal){
  
   if(high != -1){
     // transfer coordinate from NED to LatLng
-    double next_lat = UnpackProtocol::getLat(north, ori_lat_);
-    double next_lng = UnpackProtocol::getLng(east, ori_lat_, ori_lng_);
+    long double next_lat = UnpackProtocol::transferToLat(north, ori_lat_);
+    long double next_lng = UnpackProtocol::transferToLng(east, ori_lat_, ori_lng_);
 
-    ROS_INFO_STREAM("usv_odom: latitude and longitude of next goal: " << std::setprecision(6) << north << "," << east << "," << ori_lat_ << "," << ori_lng_ << "," << next_lat << "," << next_lng);
+    ROS_INFO_STREAM("usv_odom: latitude and longitude of next goal: " << std::setprecision(12) << north << "," << east << "," << ori_lat_ << "," << ori_lng_ << "," << next_lat << "," << next_lng);
 
     std::vector<uint8_t> data_queue = PackProtocol::getDataStack(ship_num_, next_lat, next_lng);
     uint8_t data_stack[data_queue.size()];

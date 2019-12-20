@@ -92,7 +92,7 @@ std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double yaw, FixedY
 }
 
 // Point follow
-std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double lat, double lng){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, long double lat, long double lng){
   uint8_t data_stack[PackProtocol::pack_len_point_] = {PackProtocol::pack_head_, PackProtocol::pack_sec_bit_, PackProtocol::pack_len_point_, PackProtocol::ship_num_, PackProtocol::fbit_point_, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, PackProtocol::pack_tail_};
   
   data_stack[3] = static_cast<uint8_t>(ship_num);
@@ -117,7 +117,7 @@ std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double lat, double
 }
 
 // Common line follow
-std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, double lat1, double lng1, double lat2, double lng2){
+std::vector<uint8_t> PackProtocol::getDataStack(int ship_num, long double lat1, long double lng1, long double lat2, long double lng2){
   /* Invalid */ 
   return std::vector<uint8_t>();
 }

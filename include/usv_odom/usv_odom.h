@@ -144,8 +144,8 @@ private:
   int ship_num_;
 
   // odom message
-  double ori_lat_;
-  double ori_lng_;
+  long double ori_lat_;
+  long double ori_lng_;
 
   // old position parameters
   double pre_north_;

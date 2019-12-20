@@ -116,7 +116,7 @@ struct UnpackProtocol{
    * @param lat_byte4 Forth data bit of latitude
    * @return calculate result
    */
-  static double getLat(char lat_byte1, char lat_byte2, char lat_byte3, char lat_byte4){
+  static long double getLat(char lat_byte1, char lat_byte2, char lat_byte3, char lat_byte4){
     return static_cast<double>(static_cast<int>(lat_byte1) << 24) + (static_cast<int>(lat_byte2 << 16) + static_cast<int>(lat_byte3 << 8) + static_cast<int>(lat_byte4)) / 100000000 + 30;
   }
  
@@ -128,7 +128,7 @@ struct UnpackProtocol{
    * @param lng_byte4 Forth data bit of longitude
    * @return calculate result
    */
-  static double getLng(char lng_byte1, char lng_byte2, char lng_byte3, char lng_byte4){
+  static long double getLng(char lng_byte1, char lng_byte2, char lng_byte3, char lng_byte4){
     return static_cast<double>(static_cast<int>(lng_byte1) << 24) + (static_cast<int>(lng_byte2 << 16) + static_cast<int>(lng_byte3 << 8) + static_cast<int>(lng_byte4)) / 100000000 + 114;
   }
 
@@ -138,7 +138,7 @@ struct UnpackProtocol{
    * @param ori_lat latitude of origin point
    * @param Caculate result
    */
-  static double getNorth(double lat, double ori_lat){
+  static double transferToNorth(long double lat, long double ori_lat){
     return (lat - ori_lat) * GpsParam::earth_a_ * (1 - std::pow(GpsParam::earth_e_, 2)) * PI / (180 * std::sqrt(std::pow((1 - std::pow(GpsParam::earth_e_ * std::sin(lat * PI / 180), 2)), 3))); 
   }
 
@@ -149,7 +149,7 @@ struct UnpackProtocol{
    * @param ori_lng longitude of origin point
    * @param Caculate result
    */
-  static double getEast(double lng, double lat, double ori_lng){
+  static double transferToEast(long double lng, long double lat, long double ori_lng){
     return (lng - ori_lng) * GpsParam::earth_a_ * std::cos(lat * PI / 180) * PI / (180 * std::sqrt(1 - std::pow(GpsParam::earth_e_ * std::sin(lat * PI / 180), 2)));
   }
 
@@ -159,7 +159,7 @@ struct UnpackProtocol{
    * @param ori_lat Latitiude of origin point 
    * @return Result of calculation
    */
-  static double getLat(double north,  double ori_lat){
+  static long double transferToLat(double north,  long double ori_lat){
     return (ori_lat + north * std::sqrt(std::pow(1 - std::pow(GpsParam::earth_e_ * std::sin(ori_lat * PI / 180), 2), 3)) * 180 / (GpsParam::earth_a_ * (1 - std::pow(GpsParam::earth_e_ , 2)) * PI));
   }
   
@@ -170,7 +170,7 @@ struct UnpackProtocol{
    * @param ori_lng Longitude of origin point
    * @return Result of calculation
    */
-  static double getLng(double east, double ori_lat, double ori_lng){
+  static long double transferToLng(double east, long double ori_lat, long double ori_lng){
     return (ori_lng + east * std::sqrt(1 - std::pow(GpsParam::earth_e_ * std::sin(ori_lat * PI / 180), 2)) * 180 / (GpsParam::earth_a_ * std::cos(ori_lat * PI / 180) * PI));
   }
 };
